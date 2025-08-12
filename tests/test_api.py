@@ -12,7 +12,7 @@ from app.models.User import User
 def all_users(app_url):
     response = requests.get(f"{app_url}/api/users/")
     assert response.status_code == HTTPStatus.OK
-    return response.json()
+    return response.json()["items"]
 
 
 def test_users(app_url):
@@ -24,8 +24,8 @@ def test_users(app_url):
         User.model_validate(user)
 
 
-def test_users_no_duplicates(users):
-    users_ids = [user["id"] for user in users]
+def test_users_no_duplicates(all_users):
+    users_ids = [user["id"] for user in all_users]
     assert len(users_ids) == len(set(users_ids))
 
 

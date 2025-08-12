@@ -14,6 +14,12 @@ add_pagination(app)
 
 users: list[User] = []
 
+with open("users.json") as f:
+    users = json.load(f)
+
+# Валидация или преобразование (если нужно)
+for user in users:
+    User.model_validate(user)
 
 @app.get("/status", status_code=HTTPStatus.OK)
 def status() -> AppStatus:
@@ -34,13 +40,13 @@ def get_users() -> Page[User]:
     return paginate(users)
 
 
-if __name__ == "__main__":
-    with open("users.json") as f:
-        users = json.load(f)
-
-    for user in users:
-        User.model_validate(user)
-
-    print("Users loaded")
-
-    uvicorn.run(app, host="localhost", port=8002)
+# if __name__ == "__main__":
+#     with open("users.json") as f:
+#         users = json.load(f)
+#
+#     for user in users:
+#         User.model_validate(user)
+#
+#     print("Users loaded")
+#
+#     uvicorn.run(app, host="localhost", port=8002)
