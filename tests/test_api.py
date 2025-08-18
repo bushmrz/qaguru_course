@@ -1,80 +1,88 @@
+import json
 from http import HTTPStatus
 from math import ceil
 
 import pytest
 import requests
 from fastapi_pagination import response
+from sqlalchemy.testing.suite.test_reflection import users
 
 from app.models.User import User
-
-
-@pytest.fixture
-def all_users(app_url):
-    response = requests.get(f"{app_url}/api/users/")
-    assert response.status_code == HTTPStatus.OK
-    return response.json()["items"]
 
 
 def test_users(app_url):
     response = requests.get(f"{app_url}/api/users/")
     assert response.status_code == HTTPStatus.OK
 
-    users = response.json()["items"]
-    for user in users:
+    users = response.json()
+    if users:
+        for user in users:
+            User.model_validate(user)
+
+
+@pytest.mark.usefixtures("fill_test_data")
+def test_users(app_url):
+    response = requests.get(f"{app_url}/api/users/")
+    assert response.status_code == HTTPStatus.OK
+
+    user_list = response.json()
+    for user in user_list:
         User.model_validate(user)
 
-
-def test_users_no_duplicates(all_users):
-    users_ids = [user["id"] for user in all_users]
+@pytest.mark.usefixtures("fill_test_data")
+def test_users_no_duplicates(users):
+    users_ids = [user["id"] for user in users]
     assert len(users_ids) == len(set(users_ids))
 
 
-@pytest.mark.parametrize("user_id", [1, 6, 12])
-def test_user(app_url, user_id):
-    response = requests.get(f"{app_url}/api/users/{user_id}")
-    assert response.status_code == HTTPStatus.OK
-
-    user = response.json()
-    User.model_validate(user)
-
-
-@pytest.mark.parametrize("user_id", [13])
+@pytest.mark.parametrize("user_id", [130])
 def test_user_nonexistent_values(app_url, user_id):
     response = requests.get(f"{app_url}/api/users/{user_id}")
+
     assert response.status_code == HTTPStatus.NOT_FOUND
+    assert response.json()['detail'] == "User not found"
 
 
-@pytest.mark.parametrize("user_id", [-1, 0, "fafaf"])
+@pytest.mark.parametrize("user_id", [-1, "fafaf"])
 def test_user_invalid_values(app_url, user_id):
     response = requests.get(f"{app_url}/api/users/{user_id}")
+
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
+def test_add_user(app_url):
+    response = requests.post(url=f"{app_url}/api/users/",
+                             json={"email":"example@mail.ma", "first_name": "John", "last_name": "Harris"})
 
-@pytest.mark.parametrize("page, size", [(1, 2), (2, 6), (3, 3), (3, 5)])
-def test_users_pagination(app_url, page, size):
-    total = 12
-    response = requests.get(f"{app_url}/api/users", params={"page": page, "size": size})
+    assert response.status_code == HTTPStatus.CREATED
 
-    total_pages = ceil(total / size)
-    last_page = total % size
-    current_items_size = last_page if page == total_pages and last_page != 0 else size
+def test_delete_user(app_url, create_user):
+    user_id = create_user
+    response = requests.delete(url=f"{app_url}/api/users/{user_id}")
 
     assert response.status_code == HTTPStatus.OK
 
-    assert response.json()["total"] == total
-    assert response.json()["size"] == size
-    assert response.json()["page"] == page
+def test_patch_user(app_url, create_user):
+    user_id = create_user
+    response = requests.patch(url=f"{app_url}/api/users/{user_id}", json={"email":"ex@maol.ew"})
 
-    assert len(response.json()["items"]) == current_items_size
+    assert response.status_code == HTTPStatus.OK
 
-    assert response.json()["pages"] == total_pages
+    requests.delete(url=f"{app_url}/api/users/{user_id}")
 
 
-def test_users_pagination_data_from_different_pages(app_url):
-    response_first = requests.get(f"{app_url}/api/users", params={"page": 1, "size": 1})
-    assert response_first.status_code == HTTPStatus.OK
+def test_delete_user_negative(app_url):
+    response = requests.delete(url=f"{app_url}/api/users/-1")
 
-    response_second = requests.get(f"{app_url}/api/users", params={"page": 2, "size": 1})
-    assert response_second.status_code == HTTPStatus.OK
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert response.json()['detail'] == "Invalid user id"
 
-    assert response_first.json()["items"] != response_second.json()["items"]
+def test_get_delete_user(app_url, create_user):
+    user_id = create_user
+    response = requests.delete(url=f"{app_url}/api/users/{user_id}")
+
+    assert response.status_code == HTTPStatus.OK
+
+    response = requests.get(url=f"{app_url}/api/users/{user_id}")
+
+    assert response.status_code == HTTPStatus.NOT_FOUND
+

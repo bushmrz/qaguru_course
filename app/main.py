@@ -1,52 +1,20 @@
-import json
-from http import HTTPStatus
+import dotenv
+
+dotenv.load_dotenv()
+
 
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 
-from models.AppStatus import AppStatus
-from models.User import User
+from routers import status, users
+from app.database.engine import create_db_and_tables
 
-from fastapi_pagination import Page, add_pagination, paginate
 
 app = FastAPI()
-add_pagination(app)
-
-users: list[User] = []
-
-with open("users.json") as f:
-    users = json.load(f)
-
-# Валидация или преобразование (если нужно)
-for user in users:
-    User.model_validate(user)
-
-@app.get("/status", status_code=HTTPStatus.OK)
-def status() -> AppStatus:
-    return AppStatus(users=bool(users))
+app.include_router(status.router)
+app.include_router(users.router)
 
 
-@app.get("/api/users/{user_id}", status_code=HTTPStatus.OK)
-def get_user(user_id: int) -> User:
-    if user_id < 1:
-        raise HTTPException(status_code=HTTPStatus.UNPROCESSABLE_ENTITY, detail="Invalid user id")
-    if user_id > len(users):
-        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="User not found")
-    return users[user_id - 1]
-
-
-@app.get("/api/users/", status_code=HTTPStatus.OK)
-def get_users() -> Page[User]:
-    return paginate(users)
-
-
-# if __name__ == "__main__":
-#     with open("users.json") as f:
-#         users = json.load(f)
-#
-#     for user in users:
-#         User.model_validate(user)
-#
-#     print("Users loaded")
-#
-#     uvicorn.run(app, host="localhost", port=8002)
+if __name__ == "__main__":
+    create_db_and_tables()
+    uvicorn.run(app, host="localhost", port=8002)
