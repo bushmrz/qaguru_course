@@ -1,7 +1,8 @@
 from http import HTTPStatus
 from typing import Iterable
-
 from fastapi import APIRouter, HTTPException
+from fastapi.exceptions import RequestValidationError
+from pydantic import ValidationError
 
 from app.database import users
 from app.models.User import User, UserCreate, UserUpdate
@@ -27,7 +28,10 @@ def get_users() -> Iterable[User]:
 
 @router.post("/", status_code=HTTPStatus.CREATED)
 def create_user(user: User) -> User:
-    UserCreate.model_validate(user.model_dump())
+    try:
+        UserCreate.model_validate(user.model_dump())
+    except ValidationError as e:
+        raise RequestValidationError(e.errors())
     return users.create_user(user)
 
 

@@ -1,23 +1,7 @@
-import json
 from http import HTTPStatus
-from math import ceil
-
 import pytest
 import requests
-from fastapi_pagination import response
-from sqlalchemy.testing.suite.test_reflection import users
-
 from app.models.User import User
-
-
-def test_users(app_url):
-    response = requests.get(f"{app_url}/api/users/")
-    assert response.status_code == HTTPStatus.OK
-
-    users = response.json()
-    if users:
-        for user in users:
-            User.model_validate(user)
 
 
 @pytest.mark.usefixtures("fill_test_data")

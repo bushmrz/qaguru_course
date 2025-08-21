@@ -1,5 +1,4 @@
 from typing import Iterable, Type
-
 from fastapi import HTTPException
 from sqlmodel import Session, select
 from app.database.engine import engine

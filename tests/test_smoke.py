@@ -11,4 +11,4 @@ def test_check_app_status(app_url):
     response_body = response.json()
     AppStatus.model_validate(response_body)
 
-    assert response_body["users"] == True
+    assert response_body["database"] == True

@@ -1,8 +1,8 @@
 Запуск приложения: 
 
-`` cd app ``
+`` docker-compose up ``
  
-`` uvicorn main:app --reload --port 8002 ``
+`` python -m app.main ``
  
 Запуск тестов 
 
