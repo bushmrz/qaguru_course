@@ -5,6 +5,9 @@ import pytest
 
 from tests.fixture_sessions import base_session
 
+from dotenv import load_dotenv
+load_dotenv()
+
 pytest_plugins = ['tests.fixture_sessions']
 
 
