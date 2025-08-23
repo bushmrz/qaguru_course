@@ -26,3 +26,4 @@ requests==2.32.4
 fastapi-pagination~=0.13.3
 sqlmodel~=0.0.24
 SQLAlchemy~=2.0.43
+curlify~=3.0.0
